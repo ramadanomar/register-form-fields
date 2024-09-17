@@ -1,0 +1,2 @@
+recursive-include registerformfields/patches *
+recursive-include registerformfields/templates *
