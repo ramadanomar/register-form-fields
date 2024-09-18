@@ -18,9 +18,34 @@ hooks.Filters.CONFIG_DEFAULTS.add_items(
         # Add your new settings that have default values here.
         # Each new setting is a pair: (setting_name, default_value).
         # Prefix your setting names with 'REGISTERFORMFIELDS_'.
+        ('ENABLE_DYNAMIC_REGISTRATION_FIELDS', True),
+        ('REGISTRATION_EXTENSION_FORM',
+         'registerformfields.forms.ExtendedRegistrationForm'),
+        ('REGISTRATION_EXTRA_FIELDS', {
+            'first_name': 'required',
+            'last_name': 'required',
+            'work_phone_number': 'required',
+        }),
+        ('MFE_CONFIG', {
+            'ENABLE_DYNAMIC_REGISTRATION_FIELDS': True,
+        }),
         ("REGISTERFORMFIELDS_VERSION", __version__),
     ]
 )
+
+# Define patches to inject settings into the LMS and CMS settings
+hooks.Filters.ENV_PATCHES.add_items([
+    (
+        'lms-env-features',
+        """
+ENABLE_DYNAMIC_REGISTRATION_FIELDS = {{ ENABLE_DYNAMIC_REGISTRATION_FIELDS }}
+REGISTRATION_EXTENSION_FORM = '{{ REGISTRATION_EXTENSION_FORM }}'
+REGISTRATION_EXTRA_FIELDS = {{ REGISTRATION_EXTRA_FIELDS }}
+MFE_CONFIG = {{ MFE_CONFIG }}
+"""
+    ),
+])
+
 
 hooks.Filters.CONFIG_UNIQUE.add_items(
     [
@@ -29,7 +54,7 @@ hooks.Filters.CONFIG_UNIQUE.add_items(
         # Each new setting is a pair: (setting_name, unique_generated_value).
         # Prefix your setting names with 'REGISTERFORMFIELDS_'.
         # For example:
-        ### ("REGISTERFORMFIELDS_SECRET_KEY", "{{ 24|random_string }}"),
+        # ("REGISTERFORMFIELDS_SECRET_KEY", "{{ 24|random_string }}"),
     ]
 )
 
@@ -38,7 +63,7 @@ hooks.Filters.CONFIG_OVERRIDES.add_items(
         # Danger zone!
         # Add values to override settings from Tutor core or other plugins here.
         # Each override is a pair: (setting_name, new_value). For example:
-        ### ("PLATFORM_NAME", "My platform"),
+        # ("PLATFORM_NAME", "My platform"),
     ]
 )
 
@@ -55,7 +80,7 @@ MY_INIT_TASKS: list[tuple[str, tuple[str, ...]]] = [
     # For example, to add LMS initialization steps, you could add the script template at:
     # registerformfields/templates/registerformfields/tasks/lms/init.sh
     # And then add the line:
-    ### ("lms", ("registerformfields", "tasks", "lms", "init.sh")),
+    # ("lms", ("registerformfields", "tasks", "lms", "init.sh")),
 ]
 
 
@@ -85,12 +110,12 @@ hooks.Filters.IMAGES_BUILD.add_items(
         # To build `myimage` with `tutor images build myimage`,
         # you would add a Dockerfile to templates/registerformfields/build/myimage,
         # and then write:
-        ### (
-        ###     "myimage",
-        ###     ("plugins", "registerformfields", "build", "myimage"),
-        ###     "docker.io/myimage:{{ REGISTERFORMFIELDS_VERSION }}",
-        ###     (),
-        ### ),
+        # (
+        # "myimage",
+        # ("plugins", "registerformfields", "build", "myimage"),
+        # "docker.io/myimage:{{ REGISTERFORMFIELDS_VERSION }}",
+        # (),
+        # ),
     ]
 )
 
@@ -101,10 +126,10 @@ hooks.Filters.IMAGES_BUILD.add_items(
 hooks.Filters.IMAGES_PULL.add_items(
     [
         # To pull `myimage` with `tutor images pull myimage`, you would write:
-        ### (
-        ###     "myimage",
-        ###     "docker.io/myimage:{{ REGISTERFORMFIELDS_VERSION }}",
-        ### ),
+        # (
+        # "myimage",
+        # "docker.io/myimage:{{ REGISTERFORMFIELDS_VERSION }}",
+        # ),
     ]
 )
 
@@ -115,10 +140,10 @@ hooks.Filters.IMAGES_PULL.add_items(
 hooks.Filters.IMAGES_PUSH.add_items(
     [
         # To push `myimage` with `tutor images push myimage`, you would write:
-        ### (
-        ###     "myimage",
-        ###     "docker.io/myimage:{{ REGISTERFORMFIELDS_VERSION }}",
-        ### ),
+        # (
+        # "myimage",
+        # "docker.io/myimage:{{ REGISTERFORMFIELDS_VERSION }}",
+        # ),
     ]
 )
 
@@ -159,7 +184,8 @@ hooks.Filters.ENV_TEMPLATE_TARGETS.add_items(
 # apply a patch based on the file's name and contents.
 for path in glob(str(importlib_resources.files("registerformfields") / "patches" / "*")):
     with open(path, encoding="utf-8") as patch_file:
-        hooks.Filters.ENV_PATCHES.add_item((os.path.basename(path), patch_file.read()))
+        hooks.Filters.ENV_PATCHES.add_item(
+            (os.path.basename(path), patch_file.read()))
 
 
 ########################################
@@ -175,20 +201,20 @@ for path in glob(str(importlib_resources.files("registerformfields") / "patches"
 # To add a custom job, define a Click command that returns a list of tasks,
 # where each task is a pair in the form ("<service>", "<shell_command>").
 # For example:
-### @click.command()
-### @click.option("-n", "--name", default="plugin developer")
-### def say_hi(name: str) -> list[tuple[str, str]]:
-###     """
-###     An example job that just prints 'hello' from within both LMS and CMS.
-###     """
-###     return [
-###         ("lms", f"echo 'Hello from LMS, {name}!'"),
-###         ("cms", f"echo 'Hello from CMS, {name}!'"),
-###     ]
+# @click.command()
+# @click.option("-n", "--name", default="plugin developer")
+# def say_hi(name: str) -> list[tuple[str, str]]:
+# """
+# An example job that just prints 'hello' from within both LMS and CMS.
+# """
+# return [
+# ("lms", f"echo 'Hello from LMS, {name}!'"),
+# ("cms", f"echo 'Hello from CMS, {name}!'"),
+# ]
 
 
 # Then, add the command function to CLI_DO_COMMANDS:
-## hooks.Filters.CLI_DO_COMMANDS.add_item(say_hi)
+# hooks.Filters.CLI_DO_COMMANDS.add_item(say_hi)
 
 # Now, you can run your job like this:
 #   $ tutor local do say-hi --name="Ramadan Omar"
@@ -206,23 +232,23 @@ for path in glob(str(importlib_resources.files("registerformfields") / "patches"
 # group and then add it to CLI_COMMANDS:
 
 
-### @click.group()
-### def registerformfields() -> None:
-###     pass
+# @click.group()
+# def registerformfields() -> None:
+# pass
 
 
-### hooks.Filters.CLI_COMMANDS.add_item(registerformfields)
+# hooks.Filters.CLI_COMMANDS.add_item(registerformfields)
 
 
 # Then, you would add subcommands directly to the Click group, for example:
 
 
-### @registerformfields.command()
-### def example_command() -> None:
-###     """
-###     This is helptext for an example command.
-###     """
-###     print("You've run an example command.")
+# @registerformfields.command()
+# def example_command() -> None:
+# """
+# This is helptext for an example command.
+# """
+# print("You've run an example command.")
 
 
 # This would allow you to run:
