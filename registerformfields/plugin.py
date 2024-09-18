@@ -13,6 +13,43 @@ from .__about__ import __version__
 # CONFIGURATION
 ########################################
 
+hooks.Filters.CONFIG_DEFAULTS.add_items([
+    ("ENABLE_DYNAMIC_REGISTRATION_FIELDS", True),
+    ("MFE_CONFIG", {
+        "ENABLE_DYNAMIC_REGISTRATION_FIELDS": True,
+    }),
+])
+
+# Patching the LMS settings to include your plugin's settings
+hooks.Filters.ENV_PATCHES.add_items([
+    (
+        "lms-env-features",
+        """
+# Enable dynamic registration fields
+ENABLE_DYNAMIC_REGISTRATION_FIELDS = {{ ENABLE_DYNAMIC_REGISTRATION_FIELDS }}
+
+# Include the registration extension form
+REGISTRATION_EXTENSION_FORM = "registerformfields.forms.ExtendedRegistrationForm"
+
+# Extra registration fields
+REGISTRATION_EXTRA_FIELDS.update({
+    'first_name': 'required',
+    'last_name': 'required',
+    'work_phone_number': 'required',
+})
+"""
+    ),
+])
+
+hooks.Filters.COMMANDS_INIT.add_item((
+    "registerformfields",  # Name of your plugin
+    ["lms", "cms"],        # Services to run the command on
+    """
+    python manage.py lms migrate registerformfields --noinput
+    """
+))
+
+
 hooks.Filters.CONFIG_DEFAULTS.add_items(
     [
         # Add your new settings that have default values here.
@@ -32,19 +69,6 @@ hooks.Filters.CONFIG_DEFAULTS.add_items(
         ("REGISTERFORMFIELDS_VERSION", __version__),
     ]
 )
-
-# Define patches to inject settings into the LMS and CMS settings
-hooks.Filters.ENV_PATCHES.add_items([
-    (
-        'lms-env-features',
-        """
-ENABLE_DYNAMIC_REGISTRATION_FIELDS = {{ ENABLE_DYNAMIC_REGISTRATION_FIELDS }}
-REGISTRATION_EXTENSION_FORM = '{{ REGISTRATION_EXTENSION_FORM }}'
-REGISTRATION_EXTRA_FIELDS = {{ REGISTRATION_EXTRA_FIELDS }}
-MFE_CONFIG = {{ MFE_CONFIG }}
-"""
-    ),
-])
 
 
 hooks.Filters.CONFIG_UNIQUE.add_items(
